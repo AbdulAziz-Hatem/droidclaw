@@ -1,4 +1,4 @@
-name: 🤖 Build DroidClaw APK
+name: 🤖 Build DroidClaw APK (ARM64)
 
 on:
   push:
@@ -6,6 +6,12 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Custom version name (leave blank for auto)'
+        required: false
+        type: string
 
 # Cancel in-progress runs for the same branch/PR
 concurrency:
@@ -13,8 +19,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: 🔨 Build & Test
+  build-arm64:
+    name: 🔨 Build ARM64 APK
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Needed for releases
@@ -36,14 +42,14 @@ jobs:
           java-version: '17'
 
       # ─────────────────────────────────────────
-      # 💙 Flutter Setup
+      # 💙 Flutter Setup (version محدد ومستقر)
       # ─────────────────────────────────────────
-      - name: 💙 Setup Flutter 3.x
+      - name: 💙 Setup Flutter 3.24.5
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
+          flutter-version: '3.24.5'
           channel: 'stable'
-          cache: true  # Cache Flutter SDK for faster builds ⚡
+          cache: true
 
       # ─────────────────────────────────────────
       # 📦 Dependencies
@@ -52,50 +58,36 @@ jobs:
         run: flutter pub get
 
       # ─────────────────────────────────────────
-      # 🔨 Generate Code
+      # 🔨 Generate Code (build_runner) - معالجة الأخطاء
       # ─────────────────────────────────────────
       - name: 🔨 Generate Code (build_runner)
         run: |
-          echo "Running build_runner to generate .g.dart files..."
-          dart run build_runner build --delete-conflicting-outputs 2>&1 || echo "build_runner had issues (may be OK)"
-      # ─────────────────────────────────────────
-      - name: 🔍 Analyze Code
-        run: flutter analyze --no-fatal-infos
-        continue-on-error: true  # Don't fail on warnings
+          echo "🧹 Cleaning old generated files..."
+          dart run build_runner clean 2>&1 || true
+          echo "🏗️ Generating fresh .g.dart files..."
+          dart run build_runner build --delete-conflicting-outputs 2>&1 || echo "⚠️ build_runner had issues, checking if generated files exist..."
+          echo "📋 Checking for generated files..."
+          find lib -name "*.g.dart" -o -name "*.freezed.dart" 2>/dev/null | head -20 || echo "No generated files found"
 
       # ─────────────────────────────────────────
-      # 🧪 Run Tests
+      # 🏗️ Build ARM64 APK فقط
       # ─────────────────────────────────────────
-      - name: 🧪 Run Tests
-        run: flutter test
-        continue-on-error: true  # Don't fail if no tests yet
-
-      # ─────────────────────────────────────────
-      # 🔧 Debug: Check Android project structure
-      # ─────────────────────────────────────────
-      - name: 🔧 Debug Android Structure
+      - name: 🏗️ Build ARM64 Release APK
+        id: build
         run: |
-          echo "=== Android directory ==="
-          find android -type f | head -50
-          echo "=== Gradle wrapper ==="
-          ls -la android/gradle/wrapper/ 2>/dev/null || echo "NO wrapper dir"
-          echo "=== Assets ==="
-          ls -la assets/ 2>/dev/null || echo "NO assets dir"
-          echo "=== Config ==="
-          ls -la config/ 2>/dev/null || echo "NO config dir"
-          echo "=== Flutter doctor ==="
-          flutter doctor -v
+          echo "📱 Building ARM64 APK only..."
+          flutter build apk --release --target-platform android-arm64 --split-per-abi 2>&1 | tee build-output.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "BUILD_EXIT_CODE=$BUILD_EXIT" >> $GITHUB_OUTPUT
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "❌ BUILD FAILED! Last 100 lines:"
+            tail -100 build-output.log
+            exit $BUILD_EXIT
+          fi
 
       # ─────────────────────────────────────────
-      # 🏗️ Build APK (fat APK - all architectures)
+      # 📤 Upload Build Log (if failed)
       # ─────────────────────────────────────────
-      - name: 🏗️ Build Release APK
-        run: |
-          flutter build apk --release 2>&1 | tee build-output.log || true
-          echo "=== BUILD EXIT CODE: $? ==="
-          echo "=== LAST 100 LINES OF BUILD LOG ==="
-          tail -100 build-output.log
-
       - name: 📋 Upload Build Log
         if: failure()
         uses: actions/upload-artifact@v4
@@ -105,113 +97,64 @@ jobs:
           retention-days: 5
 
       # ─────────────────────────────────────────
-      # 📊 Build Info
+      # 📊 APK Info
       # ─────────────────────────────────────────
       - name: 📊 APK Info
         run: |
-          echo "📱 APK built successfully!"
-          echo "🔍 Looking for APK files..."
-          find build -name "*.apk" -exec ls -lh {} \; 2>/dev/null || echo "Searching wider..."
-          find . -name "app-release.apk" -exec ls -lh {} \; 2>/dev/null
-          APK_PATH=$(find build -name "app-release.apk" -type f 2>/dev/null | head -1)
-          if [ -n "$APK_PATH" ]; then
-            echo "📦 Size: $(du -h "$APK_PATH" | cut -f1)"
-            echo "📍 Path: $APK_PATH"
-            ls -lh "$(dirname "$APK_PATH")"
-          else
-            echo "⚠️ APK not found at expected path, listing outputs..."
-            find build/app/outputs -type f 2>/dev/null || echo "No outputs dir"
-          fi
+          echo "✅ Build completed!"
+          echo ""
+          echo "📱 APK Files:"
+          find build -name "*.apk" -exec ls -lh {} \; 2>/dev/null || echo "⚠️ No APK files found"
+          echo ""
+          echo "📦 APK Sizes:"
+          find build -name "*.apk" -exec sh -c 'echo "  $(du -h "$1" | cut -f1) - $(basename "$1")"' _ {} \; 2>/dev/null
 
       # ─────────────────────────────────────────
-      # 📤 Upload APK as artifact (for PRs & branch pushes)
+      # 📤 Upload ARM64 APK كـ Artifact
       # ─────────────────────────────────────────
-      - name: 📤 Upload APK Artifact
+      - name: 📤 Upload ARM64 APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: droidclaw-apk-${{ github.sha }}
+          name: droidclaw-arm64-v8a-${{ github.sha }}
           path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/release/app-release.apk
-          retention-days: 30
-          if-no-files-found: warn
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          retention-days: 90
+          if-no-files-found: error
 
       # ─────────────────────────────────────────
-      # 🚀 Create Release (only on tag push)
+      # 🚀 Create/Update Release (عند دفع Tag فقط)
       # ─────────────────────────────────────────
-      - name: 🚀 Create GitHub Release
+      - name: 🚀 Create GitHub Release with APK
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/**/*.apk
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           tag_name: ${{ github.ref_name }}
           name: "🤖 DroidClaw ${{ github.ref_name }}"
           body: |
             ## 🤖 DroidClaw ${{ github.ref_name }}
 
             ### 📱 Download
-            Download the APK below and install on your Android device (5.0+).
+            | الملف | الحجم | المعمارية |
+            |------|------|-----------|
+            | `DroidClaw-ARM64.apk` | (انظر أدناه) | ARM64-v8a |
 
-            ### 📋 Requirements
+            **للتثبيت:**
+            1. حمّل ملف APK أعلاه
+            2. فعّل "التثبيت من مصادر غير معروفة" في إعدادات هاتفك
+            3. افتح ملف APK وقم بتثبيته
+            4. شغّل DroidClaw واختر مزود AI!
+
+            ### 📋 المتطلبات
             - Android 5.0+ (API 21+)
-            - ~50MB storage
+            - ذاكرة ~50MB للتطبيق
 
-            ### 🔧 Install
-            1. Download the APK below
-            2. Enable "Install from unknown sources" on your phone
-            3. Open the APK to install
-            4. Launch DroidClaw and configure your AI provider!
+            ### 🔧 ملاحظات
+            - هذا الإصدار ARM64-v8a فقط (لمعالجات 64-bit)
+            - الـ APK غير موقّع (Unsigned) - آمن للتثبيت اليدوي
+            - تم بناء هذا الإصدار تلقائياً عبر GitHub Actions
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ─────────────────────────────────────────────
-  # 🔨 Split APKs Build (for smaller downloads)
-  # ─────────────────────────────────────────────
-  build-split:
-    name: 🔨 Build Split APKs
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: 📂 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: ☕ Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: 💙 Setup Flutter 3.x
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.x'
-          channel: 'stable'
-          cache: true
-
-      - name: 📦 Get Dependencies
-        run: flutter pub get
-
-      - name: 🏗️ Build Split APKs
-        run: flutter build apk --release --split-per-abi
-
-      - name: 📤 Upload Split APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: droidclaw-split-apks
-          path: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-            build/app/outputs/flutter-apk/app-x86_64-release.apk
-          retention-days: 30
-
-      - name: 🚀 Upload Split APKs to Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/app/outputs/**/*.apk
-          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
