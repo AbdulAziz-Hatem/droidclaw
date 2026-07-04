@@ -126,7 +126,7 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(width: 8),
           _statCard('⚡', 'Skills', '${SkillEngine.I.skills.length}', DroidTheme.amber),
           const SizedBox(width: 8),
-          _statCard('🧠', 'Memories', '${stats?.memories ?? 0}', DroidTheme.purple),
+          _statCard('🧠', 'Memories', '${stats?.memories ?? 0}', DroidTheme.accent),
           const SizedBox(width: 8),
           _statCard('💬', 'Messages', '${stats?.messages ?? 0}', DroidTheme.green),
         ]);

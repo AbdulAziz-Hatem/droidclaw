@@ -60,7 +60,7 @@ class MultiModalEngine extends ChangeNotifier {
           prompt = customPrompt ?? 'Process this image and provide useful information.';
       }
 
-      final result = await AIProviderManager.I.chat(
+      final result = await AIProviderManager.I.activeProvider.chat(
         modelId: AIProviderManager.I.activeModelId,
         messages: [
           {'role': 'system', 'content': 'You are a multi-modal AI. Analyze images carefully and provide detailed, useful responses.'},
@@ -138,7 +138,7 @@ class MultiModalEngine extends ChangeNotifier {
       }
 
       // Placeholder: In production, send audio to provider
-      final result = await AIProviderManager.I.chat(
+      final result = await AIProviderManager.I.activeProvider.chat(
         modelId: AIProviderManager.I.activeModelId,
         messages: [
           {'role': 'system', 'content': 'You are processing an audio file. Provide useful analysis.'},
@@ -207,7 +207,7 @@ class MultiModalEngine extends ChangeNotifier {
           prompt = customPrompt ?? 'Process this document:\n\n$truncated';
       }
 
-      final result = await AIProviderManager.I.chat(
+      final result = await AIProviderManager.I.activeProvider.chat(
         modelId: AIProviderManager.I.activeModelId,
         messages: [
           {'role': 'system', 'content': 'You are a document processing AI. Provide useful, structured analysis.'},
