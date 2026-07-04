@@ -57,7 +57,7 @@ dependencies:
   speech_to_text: ^6.6.0
   flutter_tts: ^3.8.5
   audioplayers: ^5.2.1
-  record: ^5.0.5
+  record: ^5.2.0
   
   # ═══════════════════════════════════════════════════
   # 📱 Platform & Device
