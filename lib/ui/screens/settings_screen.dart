@@ -190,13 +190,13 @@ class SettingsScreen extends StatelessWidget {
       Container(decoration: BoxDecoration(color: DroidTheme.surface, borderRadius: BorderRadius.circular(10),
         border: Border.all(color: DroidTheme.border, width: 0.5)),
         child: Column(children: List.generate(children.length, (i) =>
-          Column(children: [if (i > 0) Divider(height: 1, color: DroidTheme.border.withValues(alpha: 0.3), indent: 48), children[i]])))),
+          Column(children: [if (i > 0) Divider(height: 1, color: DroidTheme.border.withOpacity(0.3), indent: 48), children[i]])))),
     ]).animate().fadeIn(delay: 80.ms);
   }
 
   Widget _tile(IconData icon, Color color, String title, String sub, {VoidCallback? onTap}) {
     return ListTile(
-      leading: Container(width: 30, height: 30, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+      leading: Container(width: 30, height: 30, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
         child: Icon(icon, color: color, size: 15)),
       title: Text(title, style: TextStyle(color: DroidTheme.txt, fontSize: 12, fontWeight: FontWeight.w500)),
       subtitle: Text(sub, style: TextStyle(color: DroidTheme.txt3, fontSize: 10)),
@@ -206,7 +206,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _switchTile(IconData icon, Color color, String title, String sub, bool val) {
     return StatefulBuilder(builder: (context, setState) => ListTile(
-      leading: Container(width: 30, height: 30, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+      leading: Container(width: 30, height: 30, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
         child: Icon(icon, color: color, size: 15)),
       title: Text(title, style: TextStyle(color: DroidTheme.txt, fontSize: 12, fontWeight: FontWeight.w500)),
       subtitle: Text(sub, style: TextStyle(color: DroidTheme.txt3, fontSize: 10)),
@@ -229,7 +229,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (_) => DraggableScrollableSheet(initialChildSize: 0.7, expand: false,
         builder: (_, ctrl) => Column(children: [
           const SizedBox(height: 10),
-          Container(width: 34, height: 4, decoration: BoxDecoration(color: DroidTheme.txt3.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2))),
+          Container(width: 34, height: 4, decoration: BoxDecoration(color: DroidTheme.txt3.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
           Padding(padding: const EdgeInsets.all(14), child: Text('Select Provider 🤖 (${AIProviderManager.I.providers.length} providers)',
             style: TextStyle(color: DroidTheme.txt, fontSize: 16, fontWeight: FontWeight.w700))),
           Expanded(child: ListView.builder(controller: ctrl, padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -237,8 +237,8 @@ class SettingsScreen extends StatelessWidget {
               final p = AIProviderManager.I.providers[i];
               final active = p.id == AIProviderManager.I.activeProviderId;
               return Container(margin: const EdgeInsets.only(bottom: 4), decoration: BoxDecoration(
-                color: active ? DroidTheme.accent.withValues(alpha: 0.1) : DroidTheme.card, borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: active ? DroidTheme.accent.withValues(alpha: 0.4) : DroidTheme.border)),
+                color: active ? DroidTheme.accent.withOpacity(0.1) : DroidTheme.card, borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: active ? DroidTheme.accent.withOpacity(0.4) : DroidTheme.border)),
                 child: ListTile(
                   leading: Text(p.icon, style: const TextStyle(fontSize: 20)),
                   title: Text(p.name, style: TextStyle(color: active ? DroidTheme.accent : DroidTheme.txt, fontWeight: FontWeight.w600, fontSize: 13)),
@@ -258,7 +258,7 @@ class SettingsScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(width: 34, height: 4, decoration: BoxDecoration(color: DroidTheme.txt3.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2))),
+        Container(width: 34, height: 4, decoration: BoxDecoration(color: DroidTheme.txt3.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
         Padding(padding: const EdgeInsets.all(14), child: Text('Select Model (${models.length})',
           style: TextStyle(color: DroidTheme.txt, fontSize: 16, fontWeight: FontWeight.w700))),
         ...models.map((m) => ListTile(
