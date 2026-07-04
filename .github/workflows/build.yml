@@ -70,6 +70,16 @@ jobs:
           find lib -name "*.g.dart" -o -name "*.freezed.dart" 2>/dev/null | head -20 || echo "No generated files found"
 
       # ─────────────────────────────────────────
+      # 🧹 Clean Gradle Cache (fixes bcprov-jdk18on jar issue)
+      # ─────────────────────────────────────────
+      - name: 🧹 Clean Gradle Cache
+        run: |
+          echo "🧹 Cleaning Gradle cache to prevent bcprov jar corruption..."
+          rm -rf ~/.gradle/caches/jars-9/ 2>/dev/null || true
+          rm -rf ~/.gradle/caches/transforms-* 2>/dev/null || true
+          echo "✅ Gradle cache cleaned"
+
+      # ─────────────────────────────────────────
       # 🏗️ Build ARM64 APK فقط
       # ─────────────────────────────────────────
       - name: 🏗️ Build ARM64 Release APK
